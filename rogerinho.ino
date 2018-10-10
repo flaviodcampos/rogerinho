@@ -2,11 +2,20 @@
 
 VarSpeedServo servo1, servo2, servo3, servo4;
 int velocidadeMaxima = 20;
-int velocidades[3] = [20,20,20];
+
+/*
+ * velocidades[0] é referente a velocidade da base
+ * velocidades[1] é referente a velocidade do ombro
+ * velocidades[2] é referente a velocidade do cotovelo
+ */
+int velocidades[3] = {20,20,20};
 
 int angAtualBase = 0;
 int angAtualCotovelo = 0;
 int angAtualOmbro = 0;
+
+
+int opcaoMenu;
 
 double posAtualX, posAtualY, posAtualZ = 0;
 
@@ -30,10 +39,7 @@ void calculaVelocidade(int angBase, int angOmbro,  int angCotovelo) {
    * 1 -> Ângulo do Ombro
    * 2 -> Ângulo do Cotovelo
    */
-  velocidades[0] = 0;
-  velocidades[1] = 0;
-  velocidades[2] = 0;
-  
+    
   int maior = 0;
   int deltaBase = abs(angBase - angAtualBase);
   int deltaOmbro = abs(angOmbro - angAtualOmbro);
@@ -73,17 +79,23 @@ void calculaVelocidade(int angBase, int angOmbro,  int angCotovelo) {
 }
 
 void movimentaServos(int angBase, int angOmbro,  int angCotovelo) {
+  velocidades[0] = 0;
+  velocidades[1] = 0;
+  velocidades[2] = 0;
+  
   calculaVelocidade(angBase, angOmbro, angCotovelo);
   
-  servo1.write(angBase);
-  servo2.write(angOmbro);
-  servo3.write(angOmbro);
-  servo4.write(angCotovelo);
+  servo1.write(angBase,velocidades[0],false);
+  servo2.write(angOmbro,velocidades[1],false);
+  servo3.write(angOmbro,velocidades[1],false);
+  servo4.write(angCotovelo,velocidades[2],true);
+  
 }
 
-void cinematicaDireta () {
+void cinematicaDireta() {
+  int auxiliarBase, auxiliarOmbro, auxiliarCotovelo;
   Serial.print("Angulo atual da base: ");
-  Serial.println(anguloAtualBase);
+  Serial.println(angAtualBase);
   Serial.println("Agora digite o novo angulo da base: ");
   
   while(!Serial.available());
@@ -91,7 +103,7 @@ void cinematicaDireta () {
   Serial.println(auxiliarBase);
 
   Serial.print("Angulo atual do ombro: ");
-  Serial.println(anguloAtualOmbro);
+  Serial.println(angAtualOmbro);
   Serial.println("Agora digite o novo angulo do ombro:");
   
   while(!Serial.available());
@@ -99,22 +111,22 @@ void cinematicaDireta () {
   Serial.println(auxiliarOmbro);
 
   Serial.print("Angulo atual do cotovelo: ");
-  Serial.println(anguloAtualCotovelo);
+  Serial.println(angAtualCotovelo);
   Serial.println("Agora digite o novo angulo do cotovelo:");
 
   while(!Serial.available());
   auxiliarCotovelo = Serial.parseInt();
   Serial.println(auxiliarCotovelo);
 
-  movimentaServos(auxiliarBase, auxiliarAngulo, auxiliarCotovelo);
+  movimentaServos(auxiliarBase, auxiliarOmbro, auxiliarCotovelo);
 }
 
 void cinematicaInversa(double x, double y, double z) {
   double pi = 3.14159;
   // dados do robo
-  double x3 = auxiliarX; // posição x do robo 
-  double y3 = auxiliarY; // posição y do robo
-  double z3 = auxiliarZ; //altura do robo
+  double x3 = x; // posição x do robo 
+  double y3 = y; // posição y do robo
+  double z3 = z; //altura do robo
   double l1 = 0;
   double l2 = 12.5;
   double l3 = 14.5;
@@ -176,6 +188,20 @@ void routePlanner(double x, double y, double z) {
   }
 }
 
+void imprimeMenu() {
+  Serial.println("\n\nEscolha uma opcao para comecar:\n1-Cinematica Direta\n2-Cinematica Inversa\n");
+}
+
+void Menu (int opcaoMenu) {
+  switch (opcaoMenu) {
+    case 1:
+      cinematicaDireta();            
+      break;
+    default:
+      return;
+  }
+}
+
 void setup() {
   Serial.begin(9600);
 
@@ -188,9 +214,15 @@ void setup() {
 
   //Servo do cotovelo
   servo4.attach (9);
+
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-
+  imprimeMenu();
+  //verifica se tem dados diponível para leitura
+  if (Serial.available()){
+    opcaoMenu = Serial.parseInt(); //le byte mais recente no buffer da serial
+    Serial.println(opcaoMenu);   //reenvia para o computador o dado recebido
+    Menu(opcaoMenu);
+  }
 }
