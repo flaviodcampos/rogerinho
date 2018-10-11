@@ -1,7 +1,7 @@
 #include <VarSpeedServo.h>
 
 VarSpeedServo servo1, servo2, servo3, servo4;
-int velocidadeMaxima = 20;
+int velocidadeMaxima = 10;
 
 /*
  * velocidades[0] é referente a velocidade da base
@@ -17,7 +17,9 @@ int angAtualOmbro = 0;
 
 int opcaoMenu;
 
-double posAtualX, posAtualY, posAtualZ = 0;
+double posAtualX = 0;
+double posAtualY = 14.5;
+double posAtualZ = 15;
 
 /*
  * Encontra a maior distância
@@ -30,6 +32,10 @@ double compareNumbers(double x, double y, double z) {
     result = abs(posAtualZ - z);
 
   return result;
+}
+double mapeamento(double x, double in_min, double in_max, double out_min, double out_max)
+{
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
 void calculaVelocidade(int angBase, int angOmbro,  int angCotovelo) {
@@ -64,7 +70,7 @@ void calculaVelocidade(int angBase, int angOmbro,  int angCotovelo) {
       break;
     case 1:
       velocidades[0] = (velocidadeMaxima*deltaBase)/deltaOmbro;
-      velocidades[1] = velocidadeMaxima;
+      velocidades[1] = velocidadeMaxima; 
       velocidades[2] = (velocidadeMaxima*deltaCotovelo)/deltaOmbro;
       break;    
     case 2:
@@ -78,18 +84,24 @@ void calculaVelocidade(int angBase, int angOmbro,  int angCotovelo) {
   
 }
 
-void movimentaServos(int angBase, int angOmbro,  int angCotovelo) {
+void movimentaServos(double angBase, double angOmbro,  double angCotovelo) {
   velocidades[0] = 0;
   velocidades[1] = 0;
   velocidades[2] = 0;
-  
+
+  angBase = mapeamento(angBase,0,180,5,150);
+  angOmbro = mapeamento(angOmbro,0,180,5,150);
+  angCotovelo = mapeamento(angCotovelo,0,180,5,150);
   calculaVelocidade(angBase, angOmbro, angCotovelo);
   
   servo1.write(angBase,velocidades[0],false);
   servo2.write(angOmbro,velocidades[1],false);
   servo3.write(angOmbro,velocidades[1],false);
   servo4.write(angCotovelo,velocidades[2],true);
-  
+
+  angAtualBase=angBase;
+  angAtualOmbro=angOmbro;
+  angAtualCotovelo=angCotovelo;
 }
 
 void cinematicaDireta() {
@@ -128,9 +140,9 @@ void cinematicaInversa(double x, double y, double z) {
   double y3 = y; // posição y do robo
   double z3 = z; //altura do robo
   double l1 = 0;
-  double l2 = 12.5;
-  double l3 = 14.5;
-  double d1 = 2.5;
+  double l2 = 12;
+  double l3 = 16;
+  double d1 = 0;
   
   // calculo dos auxiliares
   double X3 = pow(x3,2);
@@ -168,7 +180,40 @@ void cinematicaInversa(double x, double y, double z) {
   movimentaServos(angBase, angOmbro, angCotovelo);
 }
 
-void routePlanner(double x, double y, double z) {
+
+void routePlanner() {
+  double x, y, z;
+  Serial.print("Posicao atual X");
+  Serial.println(posAtualX);
+  Serial.println("Agora digite a nova posicao X: ");
+  
+  while(!Serial.available());
+  x = Serial.parseFloat();
+  Serial.println(x);
+
+
+  Serial.print("Posicao atual Y");
+  Serial.println(posAtualY);
+  Serial.println("Agora digite a nova posicao Y: ");
+  
+  while(!Serial.available());
+  y = Serial.parseFloat();
+  Serial.println(y);
+
+  Serial.print("Posicao atual Z");
+  Serial.println(posAtualZ);
+  Serial.println("Agora digite a nova posicao Z: ");
+  
+  while(!Serial.available());
+  z = Serial.parseFloat();
+  Serial.println(z);
+
+  routePlanner2(x,y,z);
+}
+
+void routePlanner2(double x, double y, double z) {
+  
+  
   // Resgatando maior valor 
   double aux = compareNumbers(x, y, z);
   
@@ -185,17 +230,53 @@ void routePlanner(double x, double y, double z) {
     auxZ = posAtualZ + i*(z-posAtualZ);
 
     cinematicaInversa(auxX, auxY, auxZ);
+    String string = "X "+String(auxX);
+    Serial.println(string);
+    string = "Y "+String(auxY);
+    Serial.println(string);
+    string = "Z "+String(auxZ);
+    Serial.println(string);
   }
+
+  posAtualX = x;
+  posAtualY = y;
+  posAtualZ = z;
+  
 }
 
 void imprimeMenu() {
   Serial.println("\n\nEscolha uma opcao para comecar:\n1-Cinematica Direta\n2-Cinematica Inversa\n");
 }
 
+void desenharCubo() {
+  routePlanner2(0,0,20);
+  delay(2000);
+  routePlanner2(5,0,20);
+  delay(2000);
+  routePlanner2(5,5,20);
+  delay(2000);
+  routePlanner2(0,5,20);
+  delay(2000);
+  routePlanner2(0,5,25);
+  delay(2000);
+  routePlanner2(5,5,25);
+  delay(2000);
+  routePlanner2(5,0,25);
+  delay(2000);
+  routePlanner2(0,0,25);
+  delay(2000);
+}
+
+desenhar 
 void Menu (int opcaoMenu) {
   switch (opcaoMenu) {
     case 1:
       cinematicaDireta();            
+      break;
+    case 2:
+      while(!Serial.available()) {
+        desenharCubo();
+      }
       break;
     default:
       return;
@@ -215,14 +296,17 @@ void setup() {
   //Servo do cotovelo
   servo4.attach (9);
 
+imprimeMenu();
 }
 
 void loop() {
-  imprimeMenu();
-  //verifica se tem dados diponível para leitura
+  
+ // verifica se tem dados diponível para leitura
   if (Serial.available()){
     opcaoMenu = Serial.parseInt(); //le byte mais recente no buffer da serial
     Serial.println(opcaoMenu);   //reenvia para o computador o dado recebido
     Menu(opcaoMenu);
   }
+  
+  imprimeMenu();
 }
