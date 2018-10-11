@@ -230,12 +230,7 @@ void routePlanner2(double x, double y, double z) {
     auxZ = posAtualZ + i*(z-posAtualZ);
 
     cinematicaInversa(auxX, auxY, auxZ);
-    String string = "X "+String(auxX);
-    Serial.println(string);
-    string = "Y "+String(auxY);
-    Serial.println(string);
-    string = "Z "+String(auxZ);
-    Serial.println(string);
+    
   }
 
   posAtualX = x;
@@ -245,7 +240,7 @@ void routePlanner2(double x, double y, double z) {
 }
 
 void imprimeMenu() {
-  Serial.println("\n\nEscolha uma opcao para comecar:\n1-Cinematica Direta\n2-Cinematica Inversa\n");
+  Serial.println("\n\nEscolha uma opcao para comecar:\n1. Cinematica Direta\n2. Desenhar Cubo\n3. Desenhar Piramide\n");
 }
 
 void desenharCubo() {
@@ -267,7 +262,21 @@ void desenharCubo() {
   delay(2000);
 }
 
-desenhar 
+void desenharPiramide() {
+  routePlanner2(0,0,20);
+  delay(2000);
+  routePlanner2(3,3,25);
+  delay(2000);
+  routePlanner2(6,6,20);
+  delay(2000);
+  routePlanner2(0,6,20);
+  delay(2000);
+  routePlanner2(3,3,25);
+  delay(2000);
+  routePlanner2(6,0,20);
+  delay(2000);
+}
+
 void Menu (int opcaoMenu) {
   switch (opcaoMenu) {
     case 1:
@@ -278,6 +287,10 @@ void Menu (int opcaoMenu) {
         desenharCubo();
       }
       break;
+    case 3:
+      while(!Serial.available()) {
+        desenharPiramide();
+      }
     default:
       return;
   }
@@ -296,17 +309,16 @@ void setup() {
   //Servo do cotovelo
   servo4.attach (9);
 
-imprimeMenu();
+  imprimeMenu();
 }
 
 void loop() {
-  
  // verifica se tem dados diponível para leitura
   if (Serial.available()){
     opcaoMenu = Serial.parseInt(); //le byte mais recente no buffer da serial
     Serial.println(opcaoMenu);   //reenvia para o computador o dado recebido
     Menu(opcaoMenu);
+
+    imprimeMenu();
   }
-  
-  imprimeMenu();
 }
