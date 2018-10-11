@@ -1,7 +1,7 @@
 #include <VarSpeedServo.h>
 
-VarSpeedServo servo1, servo2, servo3, servo4;
-int velocidadeMaxima = 10;
+VarSpeedServo servo1, servo2, servo3, servo4, garra;
+int velocidadeMaxima = 15;
 
 /*
  * velocidades[0] é referente a velocidade da base
@@ -240,10 +240,22 @@ void routePlanner2(double x, double y, double z) {
 }
 
 void imprimeMenu() {
-  Serial.println("\n\nEscolha uma opcao para comecar:\n1. Cinematica Direta\n2. Desenhar Cubo\n3. Desenhar Piramide\n");
+  Serial.println("\n\nEscolha uma opcao para comecar:\n1. Cinematica Direta\n2. Cinematica Inversa\n3. Desenhar Cubo\n4. Desenhar Piramide\n5. Puxa Frango");
+}
+
+void fechaGarra(){
+  garra.write(50, 0, true);  
+}
+
+void abreGarra() {
+  garra.write(5, 0, true);
 }
 
 void desenharCubo() {
+  abreGarra();
+  delay(2000);
+  fechaGarra();
+  delay(2000);
   routePlanner2(0,0,20);
   delay(2000);
   routePlanner2(5,0,20);
@@ -263,6 +275,10 @@ void desenharCubo() {
 }
 
 void desenharPiramide() {
+  abreGarra();
+  delay(2000);
+  fechaGarra();
+  delay(2000);
   routePlanner2(0,0,20);
   delay(2000);
   routePlanner2(3,3,25);
@@ -275,6 +291,29 @@ void desenharPiramide() {
   delay(2000);
   routePlanner2(6,0,20);
   delay(2000);
+  movimentaServos(90,90,90);
+  abreGarra();
+}
+
+void dadosInversa() {
+  double auxiliarX, auxiliarY, auxiliarZ;
+  
+  Serial.println("Agora digite o valor de x: ");
+  while(!Serial.available());
+  auxiliarX = Serial.parseFloat();
+  Serial.println(auxiliarX);
+
+  Serial.println("Agora digite o valor de y: ");
+  while(!Serial.available());
+  auxiliarY = Serial.parseFloat();
+  Serial.println(auxiliarY);
+
+  Serial.println("Agora digite o valor de z: ");
+  while(!Serial.available());
+  auxiliarZ = Serial.parseFloat();
+  Serial.println(auxiliarZ);
+
+  cinematicaInversa(auxiliarX, auxiliarY, auxiliarZ);
 }
 
 void Menu (int opcaoMenu) {
@@ -283,13 +322,23 @@ void Menu (int opcaoMenu) {
       cinematicaDireta();            
       break;
     case 2:
+      dadosInversa();
+    case 3:
       while(!Serial.available()) {
         desenharCubo();
       }
       break;
-    case 3:
+    case 4:
       while(!Serial.available()) {
         desenharPiramide();
+      }
+      break;
+    case 5:
+    while(!Serial.available()) {
+        abreGarra();
+        delay(1000);
+        fechaGarra();
+        delay(1000);
       }
     default:
       return;
@@ -308,6 +357,11 @@ void setup() {
 
   //Servo do cotovelo
   servo4.attach (9);
+
+  //Servo da garra
+  garra.attach(10);
+
+  movimentaServos(90, 90, 90);
 
   imprimeMenu();
 }
